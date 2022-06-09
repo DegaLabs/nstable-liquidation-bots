@@ -3,5 +3,8 @@
     "testnet": {
         "vaultContract": "naistable.deganstable.testnet"
     },
-    "accountConnect": "deganstable.testnet"
+    "accountConnect": "deganstable.testnet",
+    "db": {
+        "uri": "mongodb://localhost:27017/nstableLiquidationTestnet"
+    }
 }

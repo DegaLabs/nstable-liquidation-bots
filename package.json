@@ -12,6 +12,7 @@
   "dependencies": {
     "bignumber.js": "^9.0.2",
     "config": "^3.3.7",
+    "mongoose": "^6.3.6",
     "near-api-js": "^0.44.2"
   }
 }
