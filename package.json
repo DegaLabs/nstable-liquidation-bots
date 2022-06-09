@@ -1,0 +1,17 @@
+{
+  "name": "nstable-liquidation-bots",
+  "version": "1.0.0",
+  "description": "",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "dependencies": {
+    "bignumber.js": "^9.0.2",
+    "config": "^3.3.7",
+    "near-api-js": "^0.44.2"
+  }
+}

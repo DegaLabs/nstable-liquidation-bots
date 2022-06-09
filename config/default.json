@@ -1,0 +1,7 @@
+{
+    "network": "testnet",
+    "testnet": {
+        "vaultContract": "naistable.deganstable.testnet"
+    },
+    "accountConnect": "deganstable.testnet"
+}
