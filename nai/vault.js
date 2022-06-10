@@ -120,8 +120,8 @@ async function updateAccountIndex() {
 }
 
 async function start() {
-    let now = generalHelper.now()
     while (true) {
+        let now = generalHelper.now()
         await updateAccountIndex()
 
         let accountInfos = await db.Account.find({ lastNAIUpdated: { $lt: now - UPDATE_PERIOD } })
