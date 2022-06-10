@@ -9,7 +9,7 @@ const NUM_ACCOUNT_PER_BATCH = 50;
 const UPDATE_PERIOD = 300;
 
 async function check() {
-    let borrowInfos = await Helper.callFunction("get_current_borrow_info", { account_id: "deganstable.testnet" })
+    let borrowInfos = await nearHelper.callFunction("get_current_borrow_info", { account_id: "deganstable.testnet" })
     //let priceData = await Helper.callFunction("get_price_data", {})
     for (const b of borrowInfos) {
         console.log(b.token_id)
@@ -26,12 +26,12 @@ async function check() {
     }
 }
 
-async function updateAccountList(accountIds) {
+async function updateAccountsData(accountIds) {
     for (const accountId of accountIds) {
         let trial = 20
         while (true) {
             try {
-                let borrowInfos = await borrowHelper.callFunction("get_current_borrow_info", { account_id: accountId })
+                let borrowInfos = await nearHelper.callFunction("get_current_borrow_info", { account_id: accountId })
                 for (const b of borrowInfos) {
                     await db.NaiVault.updateOne(
                         { ownerId: b.owner_id, tokenId: b.token_id },
@@ -77,9 +77,53 @@ async function updateAccountList(accountIds) {
     }
 }
 
+async function updateAccountIndex() {
+    //update account list
+    let setting = await db.Setting.findOne({})
+    let lastNAIAccountIndex = 0
+    if (setting) {
+        lastNAIAccountIndex = setting.lastNAIAccountIndex ? setting.lastNAIAccountIndex : lastNAIAccountIndex
+    }
+
+    let trial = 20
+    while (true) {
+        try {
+            let l = await nearHelper.callFunction("get_account_list", { from_index: lastNAIAccountIndex, limit: 500 })
+            for (const acc of l) {
+                await db.Account.updateOne(
+                    { accountId: acc },
+                    {
+                        $set: { accountId: acc, lastNAIUpdated: 0 }
+                    },
+                    { upsert: true, new: true }
+                )
+            }
+            lastNAIAccountIndex += l.length
+            if (l.length < 500) break
+        } catch (e) {
+            console.log('error', e)
+            await generalHelper.sleep(5 * 1000)
+            trial--
+            if (trial == 0) {
+                break
+            }
+        }
+    }
+
+    await db.Setting.updateOne(
+        {},
+        {
+            $set: { lastNAIAccountIndex: lastNAIAccountIndex }
+        },
+        { upsert: true, new: true }
+    )
+}
+
 async function start() {
     let now = generalHelper.now()
     while (true) {
+        await updateAccountIndex()
+
         let accountInfos = await db.Account.find({ lastNAIUpdated: { $lt: now - UPDATE_PERIOD } })
         let accounts = accountInfos.map(e => e.accountId)
         console.log('updating ', accounts.length, " accounts")
@@ -89,12 +133,12 @@ async function start() {
         let functionCalls = []
         for (var i = 0; i < numBatch; i++) {
             let accountsForBatch = accounts.slice(i * NUM_ACCOUNT_PER_BATCH, (i + 1) * NUM_ACCOUNT_PER_BATCH)
-            functionCalls.push(updateAccountList(accountsForBatch))
+            functionCalls.push(updateAccountsData(accountsForBatch))
         }
         await Promise.all(functionCalls)
 
         console.log('waiting')
-        await generalHelper.sleep(60 * 1000)
+        await generalHelper.sleep(300 * 1000)
     }
 }
 

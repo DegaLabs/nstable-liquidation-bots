@@ -4,11 +4,6 @@ const BigNumber = require('bignumber.js')
 const { transactions } = require("near-api-js");
 let accountToConnect = config.accountConnect
 const Helper = {
-    callFunction: async (methodName, args) => {
-        let account = await nearHelper.connectAccount(accountToConnect)
-        let ret = await nearHelper.accountViewFunction(methodName, args, account)
-        return ret
-    },
     computeNAIAmountForLiquidation: async (borrowInfo) => {
         if (borrowInfo.borrowed == '0' || borrowInfo.current_collateral_ratio >= borrowInfo.collateral_ratio) {
             return '0'
@@ -40,7 +35,7 @@ const Helper = {
 }
 
 async function main() {
-    let borrowInfos = await Helper.callFunction("get_current_borrow_info", {account_id: "deganstable.testnet"})
+    let borrowInfos = await nearHelper.callFunction("get_current_borrow_info", {account_id: "deganstable.testnet"})
     //let priceData = await Helper.callFunction("get_price_data", {})
     for(const b of borrowInfos) {
         console.log(b.token_id)

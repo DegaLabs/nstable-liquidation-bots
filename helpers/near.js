@@ -33,6 +33,11 @@ const NEAR = {
     },
     vaultContract: () => {
         return config[config.network].vaultContract
+    },
+    callFunction: async (methodName, args) => {
+        let account = await NEAR.connectAccount(config.accountToConnect)
+        let ret = await NEAR.accountViewFunction(methodName, args, account)
+        return ret
     }
 }
 
