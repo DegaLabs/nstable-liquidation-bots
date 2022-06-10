@@ -1,6 +1,9 @@
 const nearHelper = require('../helpers/near');
 const config = require('config')
-let accountToConnect = config.accountConnect
+const accountConfig = nearHelper.getAccountConfig()
+let liquidator = accountConfig.liquidator
+const { transactions } = require("near-api-js");
+
 let borrowHelper = require('./borrow_info')
 let generalHelper = require('../helpers/general')
 let db = require('../models')
@@ -8,21 +11,16 @@ let db = require('../models')
 const NUM_ACCOUNT_PER_BATCH = 50;
 const UPDATE_PERIOD = 300;
 
-async function check() {
-    let borrowInfos = await nearHelper.callFunction("get_current_borrow_info", { account_id: "deganstable.testnet" })
-    //let priceData = await Helper.callFunction("get_price_data", {})
-    for (const b of borrowInfos) {
-        console.log(b.token_id)
-        let l = await Helper.computeNAIAmountForLiquidation(b)
-        if (l != '0') {
-            let account = await nearHelper.connectAccount("liquidatortest.testnet")
-            await account.signAndSendTransaction({
-                receiverId: nearHelper.vaultContract(),
-                actions: [
-                    transactions.functionCall("liquidate", Buffer.from(JSON.stringify({ account_id: accountToConnect, collateral_token_id: b.token_id, nai_amount: `${l}` })), 100000000000000, "100000000000000000000000")
-                ],
-            })
-        }
+async function checkOrLiquidate(b) {
+    let l = await borrowHelper.computeNAIAmountForLiquidation(b)
+    if (l != '0') {
+        let account = await nearHelper.connectAccount(liquidator)
+        await account.signAndSendTransaction({
+            receiverId: nearHelper.vaultContract(),
+            actions: [
+                transactions.functionCall("liquidate", Buffer.from(JSON.stringify({ account_id: b.owner_id, collateral_token_id: b.token_id, nai_amount: `${l}` })), 100000000000000, "100000000000000000000000")
+            ],
+        })
     }
 }
 
@@ -58,12 +56,14 @@ async function updateAccountsData(accountIds) {
                         },
                         { upsert: true, new: true }
                     )
+                    await checkOrLiquidate(b)
                 }
                 await db.Account.updateOne(
                     { accountId: accountId },
                     { $set: { lastNAIUpdated: generalHelper.now() } },
                     { upsert: true, new: true }
                 )
+
                 break
             } catch (e) {
                 console.log('error', e)
@@ -135,7 +135,11 @@ async function start() {
             let accountsForBatch = accounts.slice(i * NUM_ACCOUNT_PER_BATCH, (i + 1) * NUM_ACCOUNT_PER_BATCH)
             functionCalls.push(updateAccountsData(accountsForBatch))
         }
+
         await Promise.all(functionCalls)
+
+        //checking if any accounts liquidable
+        await db.NaiVault.find({})
 
         console.log('waiting')
         await generalHelper.sleep(300 * 1000)

@@ -1,9 +1,15 @@
 {
     "network": "testnet",
     "testnet": {
-        "vaultContract": "naistable.deganstable.testnet"
+        "vaultContract": "naistable.deganstable.testnet",
+        "accountConnect": "deganstable.testnet",
+        "liquidator": "liquidatortest.testnet"
     },
-    "accountConnect": "deganstable.testnet",
+    "mainnet": {
+        "vaultContract": "naistable.deganstable.testnet",
+        "accountConnect": "deganstable.testnet",
+        "liquidator": "liquidatortest.testnet"
+    },
     "db": {
         "uri": "mongodb://localhost:27017/nstableLiquidationTestnet"
     }

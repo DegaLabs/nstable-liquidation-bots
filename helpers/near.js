@@ -38,6 +38,9 @@ const NEAR = {
         let account = await NEAR.connectAccount(config.accountToConnect)
         let ret = await NEAR.accountViewFunction(methodName, args, account)
         return ret
+    },
+    getAccountConfig: () => {
+        return config[config.network]
     }
 }
 

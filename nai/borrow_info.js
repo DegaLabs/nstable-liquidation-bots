@@ -1,8 +1,4 @@
-const nearHelper = require('../helpers/near');
-const config = require('config')
 const BigNumber = require('bignumber.js')
-const { transactions } = require("near-api-js");
-let accountToConnect = config.accountConnect
 const Helper = {
     computeNAIAmountForLiquidation: async (borrowInfo) => {
         if (borrowInfo.borrowed == '0' || borrowInfo.current_collateral_ratio >= borrowInfo.collateral_ratio) {
@@ -24,31 +20,16 @@ const Helper = {
         ms = ms * p
         ms = ms / 10000
 
-        console.log('ts', ts)
-        console.log('ms', ms)
-        console.log('liquidated amount', ts/ms)   
+        console.log('liquidated amount', ts/ms, borrowInfo.owner_id, borrowInfo.token_id)   
         let liquidated_nai = (p * (10000 - borrowInfo.liquidation_fee) / 10000) * ts/ms
         liquidated_nai = Math.floor(liquidated_nai)
+
+        if (liquidated_nai < 50) {
+            return '0'
+        }
+
         console.log('liquidated nai', liquidated_nai)   
         return new BigNumber('1e18').multipliedBy(liquidated_nai).toFixed(0)
-    }
-}
-
-async function main() {
-    let borrowInfos = await nearHelper.callFunction("get_current_borrow_info", {account_id: "deganstable.testnet"})
-    //let priceData = await Helper.callFunction("get_price_data", {})
-    for(const b of borrowInfos) {
-        console.log(b.token_id)
-        let l = await Helper.computeNAIAmountForLiquidation(b)
-        if (l != '0') {
-            let account = await nearHelper.connectAccount("liquidatortest.testnet")
-            await account.signAndSendTransaction({
-                receiverId: nearHelper.vaultContract(),
-                actions: [
-                    transactions.functionCall("liquidate", Buffer.from(JSON.stringify({ account_id: accountToConnect, collateral_token_id: b.token_id, nai_amount: `${l}`})), 100000000000000, "100000000000000000000000")
-                ],
-            })
-        }
     }
 }
 
