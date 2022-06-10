@@ -22,9 +22,9 @@ const Helper = {
 
         console.log('liquidated amount', ts/ms, borrowInfo.owner_id, borrowInfo.token_id)   
         let liquidated_nai = (p * (10000 - borrowInfo.liquidation_fee) / 10000) * ts/ms
-        liquidated_nai = Math.floor(liquidated_nai)
+        liquidated_nai = Math.floor(liquidated_nai * 990 / 1000)
 
-        if (liquidated_nai < 50) {
+        if (liquidated_nai < 5) {
             return '0'
         }
 
